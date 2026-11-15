@@ -10,7 +10,7 @@ Gemini analyzes the image and translates user intent into a typed edit plan. It 
 
 ## Current status
 
-The initial application, Gemini analysis endpoint, deterministic browser renderer, Gemini contour segmentation and feathered internal masks, and cinematic look catalog foundation are present on the development branch. This is an early MVP: production-grade segmentation, optical calibration, denoising, RAW decoding, catalog-scale retrieval, rate limiting, and persistence are not implemented yet. See `docs/PRODUCT.md` and `docs/ARCHITECTURE.md`.
+The initial application, Gemini analysis endpoint, deterministic browser renderer, contour segmentation and feathered internal masks, and a versioned cinematic knowledge catalog with 75 authored visual studies are present on the development branch. Catalog retrieval combines Portuguese/English aliases with scene, lighting, palette, mood, camera-language and film-reference metadata. The renderer remains an early MVP: production-grade optical calibration, denoising, RAW decoding, true film-stock emulation, vector retrieval, rate limiting, and persistence are not implemented yet. See `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, and `docs/CINEMATIC-CATALOG.md`.
 
 ## Development
 
