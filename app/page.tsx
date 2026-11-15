@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { runAutoEdit } from "@/lib/editing/pipeline";
 import type { EditPlan } from "@/lib/editing/schema";
 
-const MAX_FILE_BYTES = 6 * 1024 * 1024;
+const MAX_FILE_BYTES = 3 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -49,6 +49,7 @@ export default function Home() {
 
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setStatus("Formato não suportado. Use JPG, PNG ou WebP.");
@@ -95,7 +96,7 @@ export default function Home() {
         <button className="upload-zone" onClick={() => inputRef.current?.click()} disabled={busy}>
           <span className="upload-icon">＋</span>
           <strong>Enviar fotografia</strong>
-          <span>JPG, PNG ou WebP · até 6 MB nesta versão</span>
+          <span>JPG, PNG ou WebP · até 3 MB nesta versão</span>
           <span className="upload-cta">Selecionar imagem</span>
         </button>
       )}
