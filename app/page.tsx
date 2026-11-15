@@ -88,7 +88,7 @@ export default function Home() {
       <section className="intro">
         <p className="eyebrow">AUTONOMOUS PHOTO PROCESSING</p>
         <h1>Uma boa fotografia.<br /><span>Sem precisar editá-la.</span></h1>
-        <p className="intro-copy">Envie a imagem. O OpticLab analisa luz, cor, ruído e óptica, calcula as correções e entrega o resultado.</p>
+        <p className="intro-copy">Envie a imagem. O OpticLab analisa a fotografia e aplica automaticamente uma primeira correção de luz, contraste e cor. Recursos avançados de ruído e óptica serão incorporados nas próximas etapas.</p>
       </section>
 
       {!original && (
