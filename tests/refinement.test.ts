@@ -47,6 +47,13 @@ describe("mergeEditPlan", () => {
     expect(result.global).toEqual(base.global);
   });
 
+  it("matches region labels independent of Portuguese accents", () => {
+    const result = mergeEditPlan(base, delta({
+      regionUpdates: [{ label: "ceu", adjustments: { highlights: 0.3 } }],
+    }));
+    expect(result.regions[0].adjustments.highlights).toBe(0.3);
+  });
+
   it("preserves prior quality settings unless the delta changes them", () => {
     const result = mergeEditPlan(base, delta({ quality: { sharpen: 0.5 } }));
     expect(result.quality).toEqual({ ...base.quality, sharpen: 0.5 });
