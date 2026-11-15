@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { EditPlanSchema } from "@/lib/editing/schema";
+import { retrieveCinematicLooks } from "@/lib/cinematic/catalog";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
   const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
   const instruction = parsed.data.instruction;
   const previousPlan = parsed.data.previousPlan;
+  const cinematicReferences = retrieveCinematicLooks(`${instruction} ${previousPlan?.summary ?? ""}`, 4);
 
   const systemPrompt = `Você é o analista fotográfico do OpticLab. Analise a imagem e produza SOMENTE um plano de parâmetros matemáticos para um pipeline determinístico. Você não gera imagens e não deve pedir que outro modelo redesenhe a fotografia.
 
@@ -94,6 +96,8 @@ Parâmetros permitidos:
 exposureEv [-2.5,2.5], contrast [0.65,1.5], saturation [0.5,1.5], warmth [-0.25,0.25], highlights [-0.6,0.6], shadows [-0.6,0.6], blur [0,8].
 Neutral values: exposureEv 0, contrast 1, saturation 1, warmth 0, highlights 0, shadows 0, blur 0.
 Use mudanças pequenas. Não use blur para esconder defeitos, exceto se o usuário solicitar.
+
+Referências técnicas cinematográficas recuperadas do catálogo (use como orientação, não como preset obrigatório): ${JSON.stringify(cinematicReferences)}
 
 Pedido do usuário: ${instruction}
 Plano anterior (se houver): ${previousPlan ? JSON.stringify(previousPlan) : "nenhum"}.
