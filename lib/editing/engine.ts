@@ -5,7 +5,7 @@ function clamp(value: number, min = 0, max = 255): number {
 }
 
 function smoothstep(edge0: number, edge1: number, value: number): number {
-  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
 }
 
