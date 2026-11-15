@@ -150,7 +150,7 @@ const TOKEN_ALIASES: Record<string, string[]> = {
   por:["sunset"], sol:["sun","sunlight","golden"], nascer:["sunrise","dawn"], entardecer:["dusk","twilight","sunset"],
   quente:["warm","amber","tungsten"], frio:["cool","blue","cyan"], azul:["blue","cool","cyan"], laranja:["orange","amber","warm"],
   verde:["green","forest","earth"], vermelho:["red","crimson"], rosa:["pink","pastel","magenta"],
-  retrato:["portrait"], pessoa:["portrait","skin tones"], rosto:["portrait","skin tones"], pessoas:["portrait","skin tones"],
+  janela:["window","light"], luz:["light","lighting"],\n  retrato:["portrait"], pessoa:["portrait","skin tones"], rosto:["portrait","skin tones"], pessoas:["portrait","skin tones"],
   cidade:["city","urban","street"], urbano:["urban","city"], rua:["street","urban"], floresta:["forest","woods","green"],
   paisagem:["landscape"], arquitetura:["architecture"], comida:["food"], carro:["car","automotive"], carroceria:["automotive","car"],
   filme:["film","analog","cinema"], pelicula:["film","analog"], analogico:["analog","film","vintage"], vintage:["retro","analog"],
