@@ -1,7 +1,7 @@
 import type { Adjustment } from "@/lib/editing/schema";
 
 export type SceneContext = "portrait" | "street" | "landscape" | "interior" | "architecture" | "fashion" | "documentary" | "action" | "food" | "nature" | "automotive" | "nightlife" | "travel" | "fine-art";
-export type LightingCharacter = "soft" | "hard" | "mixed" | "backlit" | "practical" | "low-key" | "high-key" | "available" | "diffused";
+export type LightingCharacter = "soft" | "hard" | "mixed" | "backlit" | "practical" | "low-key" | "high-key" | "available" | "diffused" | "side-lit";
 export type PaletteFamily = "neutral" | "warm" | "cool" | "cyan-amber" | "earth" | "pastel" | "neon" | "monochrome" | "desaturated" | "vivid";
 
 export interface CinematicReference {
