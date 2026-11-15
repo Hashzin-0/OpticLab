@@ -12,7 +12,7 @@ const RequestSchema = z.object({
   previousPlan: EditPlanSchema.nullable().optional(),
 }).strict();
 
-const MAX_DATA_URL_LENGTH = 8_500_000;
+const MAX_DATA_URL_LENGTH = 4_300_000;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const responseSchema = {
