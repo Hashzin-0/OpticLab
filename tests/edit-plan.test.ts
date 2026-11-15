@@ -14,6 +14,11 @@ describe("EditPlanSchema", () => {
     expect(EditPlanSchema.safeParse({ summary: "Invalid", global: { ...neutral, exposureEv: 9 }, regions: [] }).success).toBe(false);
   });
 
+  it("rejects masks that extend beyond the normalized image bounds", () => {
+    const region = { label: "céu", bounds: { x: 0.8, y: 0, width: 0.4, height: 0.5 }, feather: 0.1, adjustments: neutral };
+    expect(EditPlanSchema.safeParse({ summary: "Out of bounds", global: neutral, regions: [region] }).success).toBe(false);
+  });
+
   it("rejects more than eight internal regions", () => {
     const region = { label: "céu", bounds: { x: 0, y: 0, width: 0.5, height: 0.5 }, feather: 0.1, adjustments: neutral };
     expect(EditPlanSchema.safeParse({ summary: "Too many", global: neutral, regions: Array.from({ length: 9 }, () => region) }).success).toBe(false);
