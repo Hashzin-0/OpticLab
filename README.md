@@ -10,7 +10,7 @@ Gemini analyzes the image and translates user intent into a typed edit plan. It 
 
 ## Current status
 
-The initial application, Gemini analysis endpoint, deterministic browser renderer, bounded internal region masks, and cinematic look catalog foundation are present on the development branch. This is an early MVP: production-grade segmentation, optical calibration, denoising, RAW decoding, catalog-scale retrieval, rate limiting, and persistence are not implemented yet. See `docs/PRODUCT.md` and `docs/ARCHITECTURE.md`.
+The initial application, Gemini analysis endpoint, deterministic browser renderer, Gemini contour segmentation and feathered internal masks, and cinematic look catalog foundation are present on the development branch. This is an early MVP: production-grade segmentation, optical calibration, denoising, RAW decoding, catalog-scale retrieval, rate limiting, and persistence are not implemented yet. See `docs/PRODUCT.md` and `docs/ARCHITECTURE.md`.
 
 ## Development
 
