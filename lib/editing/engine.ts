@@ -1,5 +1,5 @@
 import type { Adjustment, EditPlan } from "./schema";
-import { getOutputDimensions, luminanceLinear, srgbToLinear, transformRgb } from "./math";
+import { getOutputDimensions, transformRgb } from "./math";
 
 function clamp(value: number, min = 0, max = 255): number {
   return Math.min(max, Math.max(min, value));
