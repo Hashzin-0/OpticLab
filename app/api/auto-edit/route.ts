@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { EditPlanSchema, DEFAULT_ADJUSTMENT } from "@/lib/editing/schema";
+import { EditPlanSchema } from "@/lib/editing/schema";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
