@@ -26,14 +26,14 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
-  async function processImage(dataUrl: string, refinement?: string) {
+  async function processImage(dataUrl: string, refinement?: string, previousPlan: EditPlan | null = plan) {
     setBusy(true);
     setStatus(refinement ? "Reinterpretando sua solicitação…" : "Analisando e corrigindo sua fotografia…");
     try {
       const result = await runAutoEdit(
         dataUrl,
         refinement ?? "Faça uma correção fotográfica profissional, natural e fiel à captura original.",
-        plan,
+        previousPlan,
       );
       const output = result.image;
       setPlan(result.plan);
@@ -63,7 +63,8 @@ export default function Home() {
       setOriginal(dataUrl);
       setEdited(null);
       setPlan(null);
-      await processImage(dataUrl);
+      setShowOriginal(false);
+      await processImage(dataUrl, undefined, null);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Não foi possível abrir a imagem.");
     }
