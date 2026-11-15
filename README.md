@@ -10,7 +10,9 @@ Gemini analyzes the image and translates user intent into a typed edit plan. It 
 
 ## Current status
 
-The initial application, Gemini analysis endpoint, deterministic browser renderer, contour segmentation and feathered internal masks, and a versioned cinematic knowledge catalog with 75 authored visual studies are present on the development branch. Catalog retrieval combines Portuguese/English aliases with scene, lighting, palette, mood, camera-language and film-reference metadata. The renderer remains an early MVP: production-grade optical calibration, denoising, RAW decoding, true film-stock emulation, vector retrieval, rate limiting, and persistence are not implemented yet. See `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, and `docs/CINEMATIC-CATALOG.md`.
+The application includes Gemini image analysis, validated contour segmentation, a versioned 75-study cinematic catalog, incremental plan refinement, and a deterministic browser renderer. The image pipeline now includes linear-light color transforms, vibrance, edge-aware denoising, local clarity, sharpening, vignette, and aspect-ratio-preserving interpolation to a 1920px long edge for smaller images.
+
+The output enlargement is not neural super-resolution and does not recover details absent from the source. Production-grade RAW decoding, optical calibration, advanced color management, professional denoising, true film-stock emulation, vector catalog retrieval, rate limiting, authentication, and persistence are not implemented yet. See `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/CINEMATIC-CATALOG.md`, and `docs/IMAGE-QUALITY.md`.
 
 ## Development
 
@@ -32,4 +34,4 @@ Copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`. Never commit secre
 - Never claim to recover clipped highlights, missing detail, true shutter speed, or real lens metadata when they were not captured.
 - Validate every model-produced parameter against application-owned schemas and bounds.
 - No generative image editing in the correction pipeline.
-- Keep every revision reproducible from the original plus its edit plan.
+- Refinements update the accumulated plan; final pixels are rendered from the original plus that plan.
