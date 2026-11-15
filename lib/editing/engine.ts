@@ -46,6 +46,30 @@ function buildFeatheredMask(
   return featherContext.getImageData(0, 0, width, height);
 }
 
+function applyGlobalAdjustments(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  adjustment: Adjustment,
+): void {
+  const tileSize = 512;
+  for (let y = 0; y < height; y += tileSize) {
+    for (let x = 0; x < width; x += tileSize) {
+      const tileWidth = Math.min(tileSize, width - x);
+      const tileHeight = Math.min(tileSize, height - y);
+      const frame = context.getImageData(x, y, tileWidth, tileHeight);
+      const pixels = frame.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const [r, g, b] = transformRgb(pixels[i], pixels[i + 1], pixels[i + 2], adjustment);
+        pixels[i] = r;
+        pixels[i + 1] = g;
+        pixels[i + 2] = b;
+      }
+      context.putImageData(frame, x, y);
+    }
+  }
+}
+
 /** A small edge-aware cross bilateral pass; tiled to bound temporary memory. */
 function applyDenoise(context: CanvasRenderingContext2D, width: number, height: number, strength: number): void {
   if (strength <= 0.01) return;
@@ -241,15 +265,7 @@ export async function applyEditPlan(source: string, plan: EditPlan): Promise<str
   // Denoise before tonal/detail enhancement to reduce sharpening of sensor/compression noise.
   applyDenoise(context, canvas.width, canvas.height, plan.quality.denoise);
 
-  const frame = context.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = frame.data;
-  for (let i = 0; i < pixels.length; i += 4) {
-    const [r, g, b] = transformRgb(pixels[i], pixels[i + 1], pixels[i + 2], plan.global);
-    pixels[i] = r;
-    pixels[i + 1] = g;
-    pixels[i + 2] = b;
-  }
-  context.putImageData(frame, 0, 0);
+  applyGlobalAdjustments(context, canvas.width, canvas.height, plan.global);
 
   // Semantic contours remain internal. Each revision is rendered from the immutable original.
   for (const region of plan.regions) {
