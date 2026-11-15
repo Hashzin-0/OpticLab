@@ -40,7 +40,8 @@ export default function Home() {
       const output = result.image;
       setPlan(result.plan);
       setEdited(output);
-      setStatus("Fotografia processada. Você pode pedir outra alteração.");
+      setShowOriginal(false);
+      setStatus("Edição atualizada. Os ajustes anteriores foram preservados.");
       setInstruction("");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Ocorreu um erro durante a edição.");
