@@ -79,12 +79,12 @@ const deltaResponseSchema = {
         type: "OBJECT",
         properties: {
           label: { type: "STRING" },
-          box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 4, maxItems: 4 },
+          box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "4", maxItems: "4" },
           mask: {
             type: "ARRAY",
-            items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 2, maxItems: 2 },
-            minItems: 3,
-            maxItems: 128,
+            items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "2", maxItems: "2" },
+            minItems: "3",
+            maxItems: "128",
           },
           feather: { type: "NUMBER" },
           adjustments: partialAdjustmentSchema,
@@ -92,8 +92,8 @@ const deltaResponseSchema = {
         required: ["label"],
       },
     },
-    regionAdds: { type: "ARRAY", items: fullRegionSchema, maxItems: 8 },
-    removeRegions: { type: "ARRAY", items: { type: "STRING" }, maxItems: 8 },
+    regionAdds: { type: "ARRAY", items: fullRegionSchema, maxItems: "8" },
+    removeRegions: { type: "ARRAY", items: { type: "STRING" }, maxItems: "8" },
   },
   required: ["summary", "global", "quality", "regionUpdates", "regionAdds", "removeRegions"],
 };
@@ -108,7 +108,7 @@ function summarizeProviderError(error: unknown): { name: string; message: string
     : typeof candidate.statusCode === "number" ? candidate.statusCode : undefined;
   const message = String(candidate.message ?? error ?? "Unknown provider error")
     .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[REDACTED_API_KEY]")
-    .replace(/data:image\\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, "[REDACTED_IMAGE]")
+    .replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, "[REDACTED_IMAGE]")
     .slice(0, 600);
   return { name: String(candidate.name ?? "Error"), message, ...(statusValue ? { status: statusValue } : {}) };
 }
