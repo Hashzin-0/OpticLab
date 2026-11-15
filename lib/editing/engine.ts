@@ -47,6 +47,9 @@ export async function applyEditPlan(source: string, plan: EditPlan): Promise<str
   image.decoding = "async";
   image.src = source;
   await image.decode();
+  if (image.naturalWidth * image.naturalHeight > 24_000_000) {
+    throw new Error("A imagem excede o limite inicial de 24 megapixels para processamento no navegador.");
+  }
 
   const canvas = document.createElement("canvas");
   canvas.width = image.naturalWidth;
