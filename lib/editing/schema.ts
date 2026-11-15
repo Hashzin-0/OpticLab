@@ -20,7 +20,10 @@ export const RegionSchema = z.object({
     y: bounded(0, 1),
     width: bounded(0.01, 1),
     height: bounded(0.01, 1),
-  }).strict(),
+  }).strict().superRefine((bounds, ctx) => {
+    if (bounds.x + bounds.width > 1) ctx.addIssue({ code: "custom", message: "Region exceeds image width" });
+    if (bounds.y + bounds.height > 1) ctx.addIssue({ code: "custom", message: "Region exceeds image height" });
+  }),
   feather: bounded(0.01, 0.35),
   adjustments: AdjustmentSchema,
 }).strict();
