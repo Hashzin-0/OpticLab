@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
   const image = parseDataUrl(parsed.data.image);
   if (!image) return NextResponse.json({ error: "Formato de imagem inválido." }, { status: 415 });
 
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-4-hydrogen";
   const instruction = parsed.data.instruction;
   const previousPlan = parsed.data.previousPlan;
   const cinematicReferences = retrieveCinematicLooks(`${instruction} ${previousPlan?.summary ?? ""}`, 4);
@@ -140,7 +140,7 @@ A resposta deve obedecer exatamente ao schema. O resumo deve ser curto, em portu
       signal: AbortSignal.timeout(25_000),
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: systemPrompt }, { inline_data: { mime_type: image.mimeType, data: image.data } }] }],
-        generationConfig: { responseMimeType: "application/json", responseSchema, temperature: 0.2 },
+        generationConfig: { responseMimeType: "application/json", responseSchema },
       }),
     });
 
