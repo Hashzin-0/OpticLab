@@ -33,10 +33,12 @@ const responseSchema = {
         type: "OBJECT",
         properties: {
           label: { type: "STRING" },
-          bounds: {
-            type: "OBJECT",
-            properties: { x: { type: "NUMBER" }, y: { type: "NUMBER" }, width: { type: "NUMBER" }, height: { type: "NUMBER" } },
-            required: ["x", "y", "width", "height"],
+          box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 4, maxItems: 4 },
+          mask: {
+            type: "ARRAY",
+            items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 2, maxItems: 2 },
+            minItems: 3,
+            maxItems: 128,
           },
           feather: { type: "NUMBER" },
           adjustments: {
@@ -48,37 +50,12 @@ const responseSchema = {
             required: ["exposureEv", "contrast", "saturation", "warmth", "highlights", "shadows", "blur"],
           },
         },
-        required: ["label", "bounds", "feather", "adjustments"],
+        required: ["label", "box_2d", "mask", "feather", "adjustments"],
       },
     },
   },
   required: ["summary", "global", "regions"],
 };
-
-async function readLimitedBody(request: NextRequest): Promise<string> {
-  const reader = request.body?.getReader();
-  if (!reader) return "";
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > MAX_DATA_URL_LENGTH + 20_000) {
-      await reader.cancel();
-      throw new Error("PAYLOAD_TOO_LARGE");
-    }
-    chunks.push(value);
-  }
-  const merged = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return new TextDecoder().decode(merged);
-}
-
 function parseDataUrl(value: string): { mimeType: string; data: string } | null {
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
   if (!match || !ALLOWED_MIME.has(match[1])) return null;
@@ -119,7 +96,7 @@ export async function POST(request: NextRequest) {
 
 Objetivo: melhorar a qualidade fotográfica de forma natural, preservando identidade, composição, objetos e conteúdo. Não invente dados EXIF, abertura, obturador, ISO ou lente. Não tente recuperar informação fisicamente ausente em áreas totalmente estouradas ou pretas.
 
-Retorne correções globais e até 8 regiões. Cada região é uma máscara INTERNA aproximada por bounding box normalizada (x,y,width,height entre 0 e 1) com feather. Escolha caixas pequenas e conservadoras para áreas semanticamente distintas, como pessoa/rosto, céu, fundo, vegetação ou primeiro plano. Não crie regiões sem benefício claro. Os limites de caixa não são segmentação pixel-perfect; evite alegar precisão que não tem.
+Retorne correções globais e até 8 regiões com segmentação automática. Para cada região, gere box_2d como [ymin,xmin,ymax,xmax] normalizado de 0 a 1000 e mask como um polígono de pontos [x,y] normalizados de 0 a 1000, seguindo a capacidade de segmentation do Gemini. O polígono deve contornar o objeto/região real, não apenas desenhar um retângulo. Use feather entre 0.005 e 0.12. Escolha regiões úteis como pessoa/rosto, céu, fundo, vegetação ou primeiro plano. Não crie regiões sem benefício claro. Não invente pixels nem áreas fora da imagem.
 
 Parâmetros permitidos:
 exposureEv [-2.5,2.5], contrast [0.65,1.5], saturation [0.5,1.5], warmth [-0.25,0.25], highlights [-0.6,0.6], shadows [-0.6,0.6], blur [0,8].
