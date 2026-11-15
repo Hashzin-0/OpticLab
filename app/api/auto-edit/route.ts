@@ -56,6 +56,30 @@ const responseSchema = {
   },
   required: ["summary", "global", "regions"],
 };
+async function readLimitedBody(request: NextRequest): Promise<string> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_DATA_URL_LENGTH + 20_000) {
+      await reader.cancel();
+      throw new Error("PAYLOAD_TOO_LARGE");
+    }
+    chunks.push(value);
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
+}
+
 function parseDataUrl(value: string): { mimeType: string; data: string } | null {
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
   if (!match || !ALLOWED_MIME.has(match[1])) return null;
