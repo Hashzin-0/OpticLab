@@ -13,7 +13,7 @@ function luminance(r: number, g: number, b: number): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function transformPixel(r: number, g: number, b: number, a: Adjustment, x: number, y: number): [number, number, number] {
+function transformPixel(r: number, g: number, b: number, a: Adjustment): [number, number, number] {
   const exposure = 2 ** a.exposureEv;
   let nr = r * exposure;
   let ng = g * exposure;
@@ -60,7 +60,7 @@ export async function applyEditPlan(source: string, plan: EditPlan): Promise<str
   const global = plan.global;
 
   for (let i = 0; i < pixels.length; i += 4) {
-    const [r, g, b] = transformPixel(pixels[i], pixels[i + 1], pixels[i + 2], global, 0, 0);
+    const [r, g, b] = transformPixel(pixels[i], pixels[i + 1], pixels[i + 2], global);
     pixels[i] = r; pixels[i + 1] = g; pixels[i + 2] = b;
   }
   context.putImageData(frame, 0, 0);
@@ -81,7 +81,7 @@ export async function applyEditPlan(source: string, plan: EditPlan): Promise<str
         const alpha = smoothstep(0, featherPx, edge);
         if (alpha <= 0) continue;
         const index = (py * width + px) * 4;
-        const [r, g, b] = transformPixel(data[index], data[index + 1], data[index + 2], region.adjustments, px, py);
+        const [r, g, b] = transformPixel(data[index], data[index + 1], data[index + 2], region.adjustments);
         data[index] = data[index] * (1 - alpha) + r * alpha;
         data[index + 1] = data[index + 1] * (1 - alpha) + g * alpha;
         data[index + 2] = data[index + 2] * (1 - alpha) + b * alpha;
