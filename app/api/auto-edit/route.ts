@@ -121,7 +121,7 @@ async function readLimitedBody(request: NextRequest): Promise<string> {
 }
 
 function parseDataUrl(value: string): { mimeType: string; data: string } | null {
-  const match = /^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
   if (!match || !ALLOWED_MIME.has(match[1])) return null;
   return { mimeType: match[1], data: match[2] };
 }
