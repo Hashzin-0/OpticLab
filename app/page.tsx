@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { applyEditPlan } from "@/lib/editing/engine";
+import { runAutoEdit } from "@/lib/editing/pipeline";
 import type { EditPlan } from "@/lib/editing/schema";
 
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
@@ -30,24 +30,12 @@ export default function Home() {
     setBusy(true);
     setStatus(refinement ? "Reinterpretando sua solicitação…" : "Analisando e corrigindo sua fotografia…");
     try {
-      const response = await fetch("/api/auto-edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: dataUrl,
-          instruction: refinement ?? "Faça uma correção fotográfica profissional, natural e fiel à captura original.",
-          previousPlan: plan,
-        }),
-      });
-      const payload: unknown = await response.json();
-      if (!response.ok) {
-        const message = typeof payload === "object" && payload !== null && "error" in payload
-          ? String(payload.error)
-          : "Não foi possível analisar a fotografia.";
-        throw new Error(message);
-      }
-      const result = payload as { plan: EditPlan };
-      const output = await applyEditPlan(dataUrl, result.plan);
+      const result = await runAutoEdit(
+        dataUrl,
+        refinement ?? "Faça uma correção fotográfica profissional, natural e fiel à captura original.",
+        plan,
+      );
+      const output = result.image;
       setPlan(result.plan);
       setEdited(output);
       setStatus("Fotografia processada. Você pode pedir outra alteração.");
