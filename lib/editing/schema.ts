@@ -49,7 +49,17 @@ export const EditPlanSchema = z.object({
   global: AdjustmentSchema,
   quality: QualitySchema,
   regions: z.array(RegionSchema).max(8),
-}).strict();
+}).strict().superRefine((plan, ctx) => {
+  const labels = new Set<string>();
+  for (const region of plan.regions) {
+    const normalized = region.label.trim().toLocaleLowerCase("pt-BR");
+    if (labels.has(normalized)) {
+      ctx.addIssue({ code: "custom", message: "Region labels must be unique" });
+      break;
+    }
+    labels.add(normalized);
+  }
+});
 
 export const AdjustmentDeltaSchema = AdjustmentSchema.partial().strict();
 export const QualityDeltaSchema = QualitySchema.partial().strict();
@@ -75,7 +85,19 @@ export const EditPlanDeltaSchema = z.object({
   regionUpdates: z.array(RegionUpdateSchema).max(8),
   regionAdds: z.array(RegionSchema).max(8),
   removeRegions: z.array(z.string().min(1).max(48)).max(8),
-}).strict();
+}).strict().superRefine((delta, ctx) => {
+  const updateLabels = delta.regionUpdates.map((update) => update.label.trim().toLocaleLowerCase("pt-BR"));
+  const removeLabels = delta.removeRegions.map((label) => label.trim().toLocaleLowerCase("pt-BR"));
+  if (new Set(updateLabels).size !== updateLabels.length) {
+    ctx.addIssue({ code: "custom", message: "Duplicate region updates are not allowed" });
+  }
+  if (new Set(removeLabels).size !== removeLabels.length) {
+    ctx.addIssue({ code: "custom", message: "Duplicate region removals are not allowed" });
+  }
+  if (updateLabels.some((label) => removeLabels.includes(label))) {
+    ctx.addIssue({ code: "custom", message: "A region cannot be updated and removed in the same delta" });
+  }
+});
 
 export type EditPlan = z.infer<typeof EditPlanSchema>;
 export type Adjustment = z.infer<typeof AdjustmentSchema>;
