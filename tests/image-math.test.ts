@@ -22,7 +22,7 @@ describe("linear-light image math", () => {
     const vivid = transformRgb(220, 30, 30, { ...DEFAULT_ADJUSTMENT, vibrance: 0.6 });
     const mutedChange = Math.abs(muted[0] - muted[1]);
     const vividChange = Math.abs(vivid[0] - vivid[1]);
-    expect(mutedChange - Math.abs(128 - 120)).toBeGreaterThan(vividChange - Math.abs(220 - 30));
+    expect(mutedChange / Math.abs(128 - 120)).toBeGreaterThan(vividChange / Math.abs(220 - 30));
   });
 
   it("upscales to a 1920px long edge without cropping or distorting aspect ratio", () => {
