@@ -6,7 +6,7 @@ Autonomous computational photography. Upload a photo; OpticLab analyzes it, buil
 
 **One user-facing engine, one automated workflow.** Internal algorithms are implementation details coordinated by a single orchestration pipeline. This is not a traditional manual photo editor.
 
-Gemini analyzes the image and translates user intent into a typed edit plan. It does not generate, repaint, or replace the photograph. Pixel changes are performed by deterministic, testable image operations. Semantic masks are generated automatically and used internally; users do not need to paint or manage masks.
+Gemini 3.8 Flash, through the official `@google/genai` SDK, analyzes the image and translates user intent into a typed edit plan. It does not generate, repaint, or replace the photograph. Pixel changes are performed by deterministic, testable image operations. Semantic masks are generated automatically and used internally; users do not need to paint or manage masks.
 
 ## Current status
 
@@ -16,7 +16,7 @@ The output enlargement is not neural super-resolution and does not recover detai
 
 ## Development
 
-Requirements: Node.js 20.9+ and npm.
+Requirements: Node.js 22+ and npm.
 
 ```bash
 npm install
