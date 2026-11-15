@@ -30,7 +30,7 @@ export default function Home() {
 
   async function processImage(dataUrl: string, refinement?: string, previousPlan: EditPlan | null = plan) {
     setBusy(true);
-    setStatus(refinement ? "Reinterpretando sua solicitação…" : "Analisando e corrigindo sua fotografia…");
+    setStatus(refinement ? "Ajustando a edição acumulada…" : "Analisando e aprimorando sua fotografia…");
     try {
       const result = await runAutoEdit(
         dataUrl,
@@ -58,7 +58,7 @@ export default function Home() {
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      setStatus("A imagem excede o limite inicial de 6 MB.");
+      setStatus("A imagem excede o limite inicial de 3 MB.");
       return;
     }
     try {
@@ -91,7 +91,7 @@ export default function Home() {
       <section className="intro">
         <p className="eyebrow">AUTONOMOUS PHOTO PROCESSING</p>
         <h1>Uma boa fotografia.<br /><span>Sem precisar editá-la.</span></h1>
-        <p className="intro-copy">Envie a imagem. O OpticLab analisa a fotografia e aplica automaticamente uma primeira correção de luz, contraste e cor. Recursos avançados de ruído e óptica serão incorporados nas próximas etapas.</p>
+        <p className="intro-copy">Envie a imagem. O OpticLab analisa a fotografia e aplica correção tonal e de cor, redução de ruído, clareza local, nitidez e ampliação de saída quando necessário.</p>
       </section>
 
       {!original && (
@@ -128,14 +128,14 @@ export default function Home() {
                 <input id="instruction" value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="Ex.: ilumine o rosto e preserve o fundo escuro…" maxLength={500} disabled={busy} />
                 <button type="submit" disabled={busy || !instruction.trim()}>Aplicar</button>
               </div>
-              <p>Descreva o resultado desejado. O sistema recalcula a edição a partir do original.</p>
+              <p>Cada pedido altera somente o necessário no plano acumulado. A imagem é recomposta do original para evitar perda de qualidade entre revisões.</p>
             </form>
           )}
           {plan && <p className="subtle-note">Edição calculada automaticamente · {plan.regions.length} regiões identificadas</p>}
         </section>
       )}
 
-      <footer><span>OpticLab</span><span>O original permanece preservado. Cada revisão é recalculada a partir dele.</span></footer>
+      <footer><span>OpticLab</span><span>O original permanece preservado. As revisões mantêm os ajustes anteriores e recompõem o resultado a partir dele.</span></footer>
     </main>
   );
 }
