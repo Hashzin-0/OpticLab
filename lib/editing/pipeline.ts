@@ -1,4 +1,4 @@
-import type { EditPlan } from "./schema";
+import { EditPlanSchema, type EditPlan } from "./schema";
 import { applyEditPlan } from "./engine";
 
 export interface AutoEditResult {
@@ -6,7 +6,7 @@ export interface AutoEditResult {
   plan: EditPlan;
 }
 
-/** The single application entry point: analyze intent, validate a plan, then render it. */
+/** One orchestration entry point. Refinements send the accumulated plan as context. */
 export async function runAutoEdit(
   original: string,
   instruction: string,
@@ -24,7 +24,13 @@ export async function runAutoEdit(
       : "Não foi possível processar a fotografia.";
     throw new Error(message);
   }
-  const result = payload as { plan: EditPlan };
-  const image = await applyEditPlan(original, result.plan);
-  return { image, plan: result.plan };
+
+  const parsed = EditPlanSchema.safeParse(
+    typeof payload === "object" && payload !== null && "plan" in payload ? payload.plan : null,
+  );
+  if (!parsed.success) throw new Error("O servidor retornou um plano de edição inválido.");
+
+  // Recompose the accumulated plan from the immutable source, never from a compressed prior output.
+  const image = await applyEditPlan(original, parsed.data);
+  return { image, plan: parsed.data };
 }
