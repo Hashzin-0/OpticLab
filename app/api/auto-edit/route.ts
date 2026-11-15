@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { GoogleGenAI, type Schema } from "@google/genai";
 import { z } from "zod";
 import { EditPlanDeltaSchema, EditPlanSchema } from "@/lib/editing/schema";
 import { mergeEditPlan } from "@/lib/editing/refinement";
@@ -39,12 +41,12 @@ const fullRegionSchema = {
   type: "OBJECT",
   properties: {
     label: { type: "STRING" },
-    box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 4, maxItems: 4 },
+    box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "4", maxItems: "4" },
     mask: {
       type: "ARRAY",
-      items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 2, maxItems: 2 },
-      minItems: 3,
-      maxItems: 128,
+      items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "2", maxItems: "2" },
+      minItems: "3",
+      maxItems: "128",
     },
     feather: { type: "NUMBER" },
     adjustments: { type: "OBJECT", properties: adjustmentProperties, required: adjustmentRequired },
@@ -58,7 +60,7 @@ const fullResponseSchema = {
     summary: { type: "STRING" },
     global: { type: "OBJECT", properties: adjustmentProperties, required: adjustmentRequired },
     quality: { type: "OBJECT", properties: qualityProperties, required: qualityRequired },
-    regions: { type: "ARRAY", items: fullRegionSchema, maxItems: 8 },
+    regions: { type: "ARRAY", items: fullRegionSchema, maxItems: "8" },
   },
   required: ["summary", "global", "quality", "regions"],
 };
@@ -77,12 +79,12 @@ const deltaResponseSchema = {
         type: "OBJECT",
         properties: {
           label: { type: "STRING" },
-          box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 4, maxItems: 4 },
+          box_2d: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "4", maxItems: "4" },
           mask: {
             type: "ARRAY",
-            items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: 2, maxItems: 2 },
-            minItems: 3,
-            maxItems: 128,
+            items: { type: "ARRAY", items: { type: "INTEGER" }, minItems: "2", maxItems: "2" },
+            minItems: "3",
+            maxItems: "128",
           },
           feather: { type: "NUMBER" },
           adjustments: partialAdjustmentSchema,
@@ -90,11 +92,32 @@ const deltaResponseSchema = {
         required: ["label"],
       },
     },
-    regionAdds: { type: "ARRAY", items: fullRegionSchema, maxItems: 8 },
-    removeRegions: { type: "ARRAY", items: { type: "STRING" }, maxItems: 8 },
+    regionAdds: { type: "ARRAY", items: fullRegionSchema, maxItems: "8" },
+    removeRegions: { type: "ARRAY", items: { type: "STRING" }, maxItems: "8" },
   },
   required: ["summary", "global", "quality", "regionUpdates", "regionAdds", "removeRegions"],
 };
+
+
+function summarizeProviderError(error: unknown): { name: string; message: string; status?: number } {
+  const candidate = typeof error === "object" && error !== null
+    ? error as { name?: unknown; message?: unknown; status?: unknown; statusCode?: unknown }
+    : {};
+  const statusValue = typeof candidate.status === "number"
+    ? candidate.status
+    : typeof candidate.statusCode === "number" ? candidate.statusCode : undefined;
+  const message = String(candidate.message ?? error ?? "Unknown provider error")
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[REDACTED_API_KEY]")
+    .replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, "[REDACTED_IMAGE]")
+    .slice(0, 600);
+  return { name: String(candidate.name ?? "Error"), message, ...(statusValue ? { status: statusValue } : {}) };
+}
+
+function writeLog(level: "info" | "error", event: string, fields: Record<string, unknown> = {}): void {
+  const entry = JSON.stringify({ service: "opticlab-auto-edit", event, ...fields });
+  if (level === "error") console.error(entry);
+  else console.info(entry);
+}
 
 async function readLimitedBody(request: NextRequest): Promise<string> {
   const reader = request.body?.getReader();
@@ -127,8 +150,14 @@ function parseDataUrl(value: string): { mimeType: string; data: string } | null 
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = randomUUID();
+  const startedAt = Date.now();
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "A análise está indisponível: configure GEMINI_API_KEY no servidor." }, { status: 503 });
+  if (!apiKey) {
+    writeLog("error", "missing_api_key", { requestId });
+    return NextResponse.json({ error: "A análise está indisponível: configure GEMINI_API_KEY no servidor.", requestId }, { status: 503 });
+  }
+  writeLog("info", "request_received", { requestId, contentLength: request.headers.get("content-length") ?? "unknown" });
 
   let raw: unknown;
   try {
@@ -151,8 +180,9 @@ export async function POST(request: NextRequest) {
   const image = parseDataUrl(parsed.data.image);
   if (!image) return NextResponse.json({ error: "Formato de imagem inválido." }, { status: 415 });
 
-  const model = process.env.GEMINI_MODEL || "gemini-4-hydrogen";
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
   const instruction = parsed.data.instruction;
+  writeLog("info", "image_validated", { requestId, model, mimeType: image.mimeType, imageBytes: Math.floor(image.data.length * 3 / 4), refinement: Boolean(parsed.data.previousPlan) });
   const previousPlan = parsed.data.previousPlan ?? null;
   const retrievedLooks = retrieveCinematicLooks(`${instruction} ${previousPlan?.summary ?? ""}`, 6);
   const cinematicReferences = retrievedLooks.length > 0
@@ -197,55 +227,90 @@ ${refinementInstructions}
 Responda em JSON conforme o schema fornecido. Escreva o resumo em português.`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      signal: AbortSignal.timeout(25_000),
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: systemPrompt }, { inline_data: { mime_type: image.mimeType, data: image.data } }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: previousPlan ? deltaResponseSchema : fullResponseSchema,
-        },
-      }),
+    writeLog("info", "gemini_request_started", { requestId, model });
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: { timeout: 25_000 },
+    });
+    const response = await ai.models.generateContent({
+      model,
+      contents: [{
+        role: "user",
+        parts: [
+          { text: systemPrompt },
+          { inlineData: { mimeType: image.mimeType, data: image.data } },
+        ],
+      }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: (previousPlan ? deltaResponseSchema : fullResponseSchema) as unknown as Schema,
+        abortSignal: AbortSignal.timeout(25_000),
+      },
     });
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) return NextResponse.json({ error: "Limite temporário de análise atingido. Tente novamente mais tarde." }, { status: 429 });
-      if (status === 401 || status === 403) return NextResponse.json({ error: "A credencial Gemini não foi aceita pelo provedor." }, { status: 502 });
-      return NextResponse.json({ error: "O serviço de análise não conseguiu processar a imagem." }, { status: 502 });
-    }
+    const responseText = response.text;
+    const candidate = response.candidates?.[0];
+    writeLog("info", "gemini_response_received", {
+      requestId,
+      model,
+      elapsedMs: Date.now() - startedAt,
+      finishReason: candidate?.finishReason ?? "unknown",
+      responseCharacters: responseText?.length ?? 0,
+      candidateCount: response.candidates?.length ?? 0,
+      promptBlockReason: response.promptFeedback?.blockReason ?? null,
+    });
 
-    const result: unknown = await response.json();
-    const text = (result as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
-      .candidates?.[0]?.content?.parts?.find((part) => typeof part.text === "string")?.text;
-    if (!text) return NextResponse.json({ error: "O Gemini retornou uma resposta vazia." }, { status: 502 });
+    if (!responseText) {
+      writeLog("error", "empty_gemini_response", {
+        requestId,
+        model,
+        finishReason: candidate?.finishReason ?? "unknown",
+        promptBlockReason: response.promptFeedback?.blockReason ?? null,
+      });
+      return NextResponse.json({ error: "O Gemini não retornou um plano utilizável. Tente novamente.", requestId }, { status: 502 });
+    }
 
     let modelOutput: unknown;
     try {
-      modelOutput = JSON.parse(text);
+      modelOutput = JSON.parse(responseText);
     } catch {
-      return NextResponse.json({ error: "A resposta do Gemini não contém um plano JSON válido." }, { status: 502 });
+      writeLog("error", "invalid_gemini_json", { requestId, model, responseCharacters: responseText.length });
+      return NextResponse.json({ error: "A resposta do Gemini não contém um plano JSON válido.", requestId }, { status: 502 });
     }
 
     if (!previousPlan) {
       const plan = EditPlanSchema.safeParse(modelOutput);
-      if (!plan.success) return NextResponse.json({ error: "O plano sugerido não passou pela validação de segurança." }, { status: 502 });
-      return NextResponse.json({ plan: plan.data });
+      if (!plan.success) {
+        writeLog("error", "edit_plan_validation_failed", { requestId, issueCount: plan.error.issues.length });
+        return NextResponse.json({ error: "O plano sugerido não passou pela validação de segurança.", requestId }, { status: 502 });
+      }
+      writeLog("info", "image_analysis_completed", { requestId, elapsedMs: Date.now() - startedAt, regions: plan.data.regions.length });
+      return NextResponse.json({ plan: plan.data, requestId });
     }
 
     const delta = EditPlanDeltaSchema.safeParse(modelOutput);
-    if (!delta.success) return NextResponse.json({ error: "A revisão incremental não passou pela validação de segurança." }, { status: 502 });
+    if (!delta.success) {
+      writeLog("error", "edit_delta_validation_failed", { requestId, issueCount: delta.error.issues.length });
+      return NextResponse.json({ error: "A revisão incremental não passou pela validação de segurança.", requestId }, { status: 502 });
+    }
     try {
-      return NextResponse.json({ plan: mergeEditPlan(previousPlan, delta.data) });
-    } catch {
-      return NextResponse.json({ error: "A revisão tentou alterar uma região inexistente ou produziu um plano inválido." }, { status: 502 });
+      const plan = mergeEditPlan(previousPlan, delta.data);
+      writeLog("info", "image_refinement_completed", { requestId, elapsedMs: Date.now() - startedAt, regions: plan.regions.length });
+      return NextResponse.json({ plan, requestId });
+    } catch (error) {
+      writeLog("error", "edit_delta_merge_failed", { requestId, error: summarizeProviderError(error) });
+      return NextResponse.json({ error: "A revisão tentou alterar uma região inexistente ou produziu um plano inválido.", requestId }, { status: 502 });
     }
   } catch (error) {
-    if (error instanceof Error && error.name === "TimeoutError") {
-      return NextResponse.json({ error: "A análise excedeu o tempo limite. Tente novamente." }, { status: 504 });
+    const details = summarizeProviderError(error);
+    writeLog("error", "gemini_request_failed", { requestId, model, elapsedMs: Date.now() - startedAt, ...details });
+    if (details.status === 429) return NextResponse.json({ error: "Limite temporário de análise atingido. Tente novamente mais tarde.", requestId }, { status: 429 });
+    if (details.status === 401 || details.status === 403) return NextResponse.json({ error: "A credencial Gemini foi recusada. Confira a chave e as permissões do projeto Google AI Studio.", requestId }, { status: 502 });
+    if (details.status === 404) return NextResponse.json({ error: "O modelo Gemini configurado não foi encontrado ou não está disponível para esta chave.", requestId }, { status: 502 });
+    if (details.status === 400) return NextResponse.json({ error: "O Gemini recusou o formato da solicitação. Consulte o log técnico para identificar o campo incompatível.", requestId }, { status: 502 });
+    if (details.name === "TimeoutError" || details.name === "RequestTimeoutError" || details.name === "AbortError") {
+      return NextResponse.json({ error: "A análise excedeu o tempo limite. Tente novamente.", requestId }, { status: 504 });
     }
-    return NextResponse.json({ error: "Falha de comunicação com o serviço de análise." }, { status: 502 });
+    return NextResponse.json({ error: "Falha ao processar a imagem no Gemini. Informe este código ao suporte: " + requestId, requestId }, { status: 502 });
   }
 }

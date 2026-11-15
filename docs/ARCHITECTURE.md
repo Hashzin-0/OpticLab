@@ -21,7 +21,8 @@ flowchart TD
 ## Responsibilities
 
 - UI: upload, progress, result, original comparison, natural-language refinement, download.
-- API route: input limits, MIME validation, server-only Gemini credentials, timeout, provider error mapping, initial-plan/delta validation, and cumulative plan merge.
+- API route: input limits, MIME validation, server-only Gemini credentials, the official `@google/genai` SDK (Gemini Developer API), bounded timeout, provider error mapping, initial-plan/delta validation, and cumulative plan merge.
+- Observability: structured Vercel runtime events carry a request ID and processing stage; provider errors are classified and sanitized. Image bytes, prompts, and credentials are never logged.
 - Edit plan schema: bounded numeric parameters, image-quality operations, and normalized region coordinates.
 - Refinement service: applies only fields returned in a validated delta; unchanged global settings, quality settings, region contours, and regional adjustments remain intact.
 - Rendering pipeline: renders the cumulative plan from immutable original pixels; it never uses the previous compressed output as its source.
@@ -66,4 +67,4 @@ The current pipeline requests Gemini contour segmentation: each region carries a
 - Processing is client-side in Canvas 2D, with tiled temporary buffers for denoise/detail passes.
 - Small images are upscaled to a 1920px long edge; larger images retain their native dimensions.
 - Never allocate unbounded pixel buffers; current source limit remains 24 megapixels.
-- Add request rate limiting, authentication/abuse controls, observability redaction, and durable job processing before public production use.
+- Add request rate limiting, authentication/abuse controls, and durable job processing before public production use. Structured server logs are already implemented with sensitive payload redaction.
