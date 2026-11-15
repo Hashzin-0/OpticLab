@@ -11,7 +11,7 @@ function normalizeLabel(value: string): string {
  */
 export function mergeEditPlan(previous: EditPlan, delta: EditPlanDelta): EditPlan {
   const removed = new Set(delta.removeRegions.map(normalizeLabel));
-  const updates = new Map(delta.regionUpdates.map((update) => [normalizeLabel(update.label), update]));
+  const updates = new Map(delta.regionUpdates.map((update) => [normalizeLabel(update.label), update] as const));
   const previousLabels = new Set(previous.regions.map((region) => normalizeLabel(region.label)));
 
   for (const label of updates.keys()) {
