@@ -1,4 +1,4 @@
-import type { EditPlan } from "./schema";
+import type { Adjustment, EditPlan } from "./schema";
 import { getOutputDimensions, transformRgb } from "./math";
 
 function clamp(value: number, min = 0, max = 255): number {
