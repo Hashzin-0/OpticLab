@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 const bounded = (min: number, max: number) => z.number().min(min).max(max);
+const coordinate = z.number().int().min(0).max(1000);
+const boxSchema = z.tuple([coordinate, coordinate, coordinate, coordinate]);
+const pointSchema = z.tuple([coordinate, coordinate]);
 
 export const AdjustmentSchema = z.object({
   exposureEv: bounded(-2.5, 2.5),
@@ -14,19 +17,24 @@ export const AdjustmentSchema = z.object({
 
 export const RegionSchema = z.object({
   label: z.string().min(1).max(48),
-  // Normalized bounding box, used to build a feathered internal mask.
-  bounds: z.object({
-    x: bounded(0, 1),
-    y: bounded(0, 1),
-    width: bounded(0.01, 1),
-    height: bounded(0.01, 1),
-  }).strict().superRefine((bounds, ctx) => {
-    if (bounds.x + bounds.width > 1) ctx.addIssue({ code: "custom", message: "Region exceeds image width" });
-    if (bounds.y + bounds.height > 1) ctx.addIssue({ code: "custom", message: "Region exceeds image height" });
-  }),
-  feather: bounded(0.01, 0.35),
+  // Gemini segmentation: [ymin, xmin, ymax, xmax], normalized to 0..1000.
+  box_2d: boxSchema,
+  // Polygon contour points [x, y], normalized to 0..1000.
+  mask: z.array(pointSchema).min(3).max(128),
+  feather: bounded(0.005, 0.12),
   adjustments: AdjustmentSchema,
-}).strict();
+}).strict().superRefine((region, ctx) => {
+  const [yMin, xMin, yMax, xMax] = region.box_2d;
+  if (yMin >= yMax || xMin >= xMax) {
+    ctx.addIssue({ code: "custom", message: "Invalid segmentation bounding box" });
+  }
+  for (const [x, y] of region.mask) {
+    if (x < xMin - 5 || x > xMax + 5 || y < yMin - 5 || y > yMax + 5) {
+      ctx.addIssue({ code: "custom", message: "Segmentation contour is outside its bounding box" });
+      break;
+    }
+  }
+});
 
 export const EditPlanSchema = z.object({
   summary: z.string().max(240),
