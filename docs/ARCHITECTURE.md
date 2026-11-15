@@ -35,7 +35,7 @@ A result is determined by source-image hash, edit-plan version, engine version, 
 
 ## Mask strategy
 
-The bootstrap uses conservative normalized bounding boxes with feathered edges as a temporary mask representation. This is explicitly approximate. Production segmentation should generate alpha masks from a dedicated segmentation model or validated image-processing method. Mask creation and editing remain invisible to the user.
+The current pipeline requests Gemini contour segmentation: each region carries a normalized bounding box and polygon mask, validated against coordinate bounds, then rasterized and feathered internally before local transforms. The contour is model-generated and may still be imperfect; QA and a fallback strategy remain necessary. Mask creation and editing remain invisible to the user.
 
 ## Execution strategy
 
