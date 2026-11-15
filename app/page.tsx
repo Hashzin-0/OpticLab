@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { runAutoEdit } from "@/lib/editing/pipeline";
 import type { EditPlan } from "@/lib/editing/schema";
@@ -82,7 +84,7 @@ export default function Home() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="OpticLab início"><span className="brand-mark">O</span> OPTICLAB</a>
+        <Link className="brand" href="/" aria-label="OpticLab início"><span className="brand-mark">O</span> OPTICLAB</Link>
         <span className="topbar-note">Computational photography · AI-assisted</span>
       </header>
 
@@ -110,7 +112,7 @@ export default function Home() {
             <button className="text-button" onClick={() => inputRef.current?.click()} disabled={busy}>Trocar imagem</button>
           </div>
           <div className="preview">
-            {visibleImage ? <img src={visibleImage} alt={showOriginal ? "Fotografia original" : "Fotografia corrigida"} /> : <div className="processing-placeholder">Preparando prévia…</div>}
+            {visibleImage ? <Image src={visibleImage} alt={showOriginal ? "Fotografia original" : "Fotografia corrigida"} fill sizes="(max-width: 640px) 100vw, 960px" unoptimized style={{ objectFit: "contain" }} /> : <div className="processing-placeholder">Preparando prévia…</div>}
             {busy && <div className="processing-overlay"><span className="spinner" />{status}</div>}
           </div>
           <div className="preview-actions">
